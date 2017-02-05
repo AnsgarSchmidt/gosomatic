@@ -27,7 +27,7 @@ func main() {
 	}
 
 	// MQTT
-	opts := mqtt.NewClientOptions().AddBroker("tcp://cortex:1883").SetClientID("goweatherunderground")
+	opts := mqtt.NewClientOptions().AddBroker(mqttserver).SetClientID("goweatherunderground")
 	opts.SetKeepAlive(2 * time.Second)
 	opts.SetPingTimeout(1 * time.Second)
 	c := mqtt.NewClient(opts)
@@ -85,6 +85,8 @@ func main() {
 		token = c.Publish(key, 0, false, text)
 		token.Wait()
 	}
+
+	c.Disconnect(0)
 
 	os.Exit(0)
 }
