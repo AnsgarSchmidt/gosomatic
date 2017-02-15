@@ -11,7 +11,7 @@ import (
 )
 
 type WoWStat struct {
-	LastModified           int `json:"lastModified"`
+	LastModified         int64 `json:"lastModified"`
 	Name                string `json:"name"`
 	Realm               string `json:"realm"`
         BattleGroup         string `json:"battlegroup"`
@@ -33,66 +33,66 @@ type WoWStat struct {
                  Int                             int `json:"int"`
                  Sta                             int `json:"sta"`
                  SpeedRating                 float64 `json:"speedRating"`
-                 SpeedRatingBonus                int `json:"speedRatingBonus"`
+                 SpeedRatingBonus            float64 `json:"speedRatingBonus"`
                  Crit                        float64 `json:"crit"`
-                 CritRating                      int `json:"critRating"`
+                 CritRating                  float64 `json:"critRating"`
                  Haste                       float64 `json:"haste"`
-                 HasteRating                     int `json:"hasteRating"`
+                 HasteRating                 float64 `json:"hasteRating"`
                  HasteRatingPercent          float64 `json:"hasteRatingPercent"`
                  Mastery                     float64 `json:"mastery"`
-                 MasteryRating                   int `json:"masteryRating"`
-                 Leech                           int `json:"leech"`
-                 LeechRating                     int `json:"leechRating"`
-                 LeechRatingBonus                int `json:"leechRatingBonus"`
-                 Versatility                     int `json:"versatility"`
+                 MasteryRating               float64 `json:"masteryRating"`
+                 Leech                       float64 `json:"leech"`
+                 LeechRating                 float64 `json:"leechRating"`
+                 LeechRatingBonus            float64 `json:"leechRatingBonus"`
+                 Versatility                 float64 `json:"versatility"`
                  VersatilityDamageDoneBonus  float64 `json:"versatilityDamageDoneBonus"`
                  VersatilityHealingDoneBonus float64 `json:"versatilityHealingDoneBonus"`
                  VersatilityDamageTakenBonus float64 `json:"versatilityDamageTakenBonus"`
-                 AvoidanceRating                 int `json:"avoidanceRating"`
+                 AvoidanceRating             float64 `json:"avoidanceRating"`
                  AvoidanceRatingBonus        float64 `json:"avoidanceRatingBonus"`
-                 SpellPen                        int `json:"spellPen"`
+                 SpellPen                    float64 `json:"spellPen"`
                  SpellCrit                   float64 `json:"spellCrit"`
-                 SpellCritRating                 int `json:"spellCritRating"`
-                 Mana5                           int `json:"mana5"`
-                 Mana5Combat                     int `json:"mana5Combat"`
-                 Armor                           int `json:"armor"`
-                 Dodge                           int `json:"dodge"`
-                 DodgeRating                     int `json:"dodgeRating"`
-                 Parry                           int `json:"parry"`
-                 ParryRating                     int `json:"parryRating"`
-                 Block                           int `json:"block"`
-                 BlockRating                     int `json:"blockRating"`
-                 MainHandDmgMin                  int `json:"mainHandDmgMin"`
-                 MainHandDmgMax                  int `json:"mainHandDmgMax"`
+                 SpellCritRating             float64 `json:"spellCritRating"`
+                 Mana5                       float64 `json:"mana5"`
+                 Mana5Combat                 float64 `json:"mana5Combat"`
+                 Armor                       float64 `json:"armor"`
+                 Dodge                       float64 `json:"dodge"`
+                 DodgeRating                 float64 `json:"dodgeRating"`
+                 Parry                       float64 `json:"parry"`
+                 ParryRating                 float64 `json:"parryRating"`
+                 Block                       float64 `json:"block"`
+                 BlockRating                 float64 `json:"blockRating"`
+                 MainHandDmgMin              float64 `json:"mainHandDmgMin"`
+                 MainHandDmgMax              float64 `json:"mainHandDmgMax"`
                  MainHandSpeed               float64 `json:"mainHandSpeed"`
                  MainHandDps                 float64 `json:"mainHandDps"`
-                 OffHandDmgMin                   int `json:"offHandDmgMin"`
-                 OffHandDmgMax                   int `json:"offHandDmgMax"`
+                 OffHandDmgMin               float64 `json:"offHandDmgMin"`
+                 OffHandDmgMax               float64 `json:"offHandDmgMax"`
                  OffHandSpeed                float64 `json:"offHandSpeed"`
                  OffHandDps                  float64 `json:"offHandDps"`
-                 RangedDmgMin                    int `json:"rangedDmgMin"`
-                 RangedDmgMax                    int `json:"rangedDmgMax"`
-                 RangedSpeed                     int `json:"rangedSpeed"`
-                 RangedDps                       int `json:"rangedDps"`
+                 RangedDmgMin                float64 `json:"rangedDmgMin"`
+                 RangedDmgMax                float64 `json:"rangedDmgMax"`
+                 RangedSpeed                 float64 `json:"rangedSpeed"`
+                 RangedDps                   float64 `json:"rangedDps"`
 	       }`json:"stats"`
 }
 
-func getWoWStatistic (url, key, realm, character string) (WoWStat) {
+func getWoWStatistic (url, key, realm, character string) (WoWStat, error) {
 	var stat *WoWStat;
 	req_url := fmt.Sprintf("%s%s/%s?fields=stats&locale=en_US&apikey=%s", url, realm, character, key)
 	log.Println(req_url)
 	resp, err := http.Get(req_url)
 	if err != nil {
 		log.Println("Error fetching data: %s for url: %s", err.Error(), url)
-		return *stat
+		return *stat, err
 	}
 
 	decoder := json.NewDecoder(resp.Body);
 	if err = decoder.Decode(&stat); err != nil {
 		log.Println("Error decoding feed: %s", err.Error())
-		return *stat
+		return *stat, err
 	}
-	return *stat
+	return *stat, nil
 }
 
 func main() {
@@ -136,23 +136,25 @@ func main() {
 		os.Exit(2)
 	}
 
-	stat := getWoWStatistic(url, wowKey, realm, charName)
+	stat, err := getWoWStatistic(url, wowKey, realm, charName)
 
-	text  := fmt.Sprintf("%d", stat.Level)
-	token := c.Publish("wow/Phawx/level", 0, false, text)
-	token.Wait()
+	if err == nil && stat.Level > 0 {
+		text := fmt.Sprintf("%d", stat.Level)
+		token := c.Publish("wow/Phawx/level", 0, false, text)
+		token.Wait()
 
-	text  = fmt.Sprintf("%d", stat.Stats.Health)
-	token = c.Publish("wow/Phawx/health", 0, false, text)
-	token.Wait()
+		text = fmt.Sprintf("%d", stat.Stats.Health)
+		token = c.Publish("wow/Phawx/health", 0, false, text)
+		token.Wait()
 
-	text  = fmt.Sprintf("%d", stat.Stats.Power)
-	token = c.Publish("wow/Phawx/power", 0, false, text)
-	token.Wait()
+		text = fmt.Sprintf("%d", stat.Stats.Power)
+		token = c.Publish("wow/Phawx/power", 0, false, text)
+		token.Wait()
 
-	text  = fmt.Sprintf("%d", stat.TotalHonorableKills)
-	token = c.Publish("wow/Phawx/totalHonorableKills", 0, false, text)
-	token.Wait()
+		text = fmt.Sprintf("%d", stat.TotalHonorableKills)
+		token = c.Publish("wow/Phawx/totalHonorableKills", 0, false, text)
+		token.Wait()
+	}
 
 	c.Disconnect(0)
 
